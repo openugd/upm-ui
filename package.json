@@ -1,0 +1,14 @@
+{
+    "name": "com.openugd.ui",
+    "displayName": "UI Elements",
+    "version": "0.1.0",
+    "unity": "2021.3",
+    "author": "https://github.com/dorofiykolya",
+    "description": "require .NET 4x\n",
+    "keywords": [
+        "ui"
+    ],
+    "dependencies": {
+    },
+    "category": "Unity"
+}
