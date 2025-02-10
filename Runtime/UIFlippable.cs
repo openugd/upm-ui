@@ -1,6 +1,4 @@
-﻿using UnityEditorInternal;
-
-namespace UnityEngine.UI
+﻿namespace UnityEngine.UI
 {
     [RequireComponent(typeof(RectTransform), typeof(Graphic))]
     [DisallowMultipleComponent]
@@ -42,7 +40,7 @@ namespace UnityEngine.UI
             {
                 if (comp.GetType() != typeof(UIFlippable))
                 {
-                    ComponentUtility.MoveComponentUp(this);
+                    UnityEditorInternal.ComponentUtility.MoveComponentUp(this);
                 }
                 else
                 {
