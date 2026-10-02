@@ -86,6 +86,11 @@ major version. Read *Changed* before upgrading: the namespace moved and three be
 ### Added
 
 - XML documentation for every public type and member.
+- EditMode tests (`Tests/Editor`, assembly `com.openugd.ui.tests`): the mirror, the triangle cutting, the
+  gradient coordinates and the tessellation run without the engine; the component tests (flip about the rect
+  centre, nothing while disabled, setters dirty the mesh, gradient end colours, blend modes, Radial and
+  Diamond centred with a (0, 0) pivot, UVs inside the original UV rect, no allocation once warm, and
+  `EmptyGraphic` emitting no vertices while accepting raycasts) carry `[Category("RequiresUnity")]`.
 - README with install instructions, quick start, and an API overview.
 - This changelog.
 - `.gitignore` for a Unity UPM package repository.
