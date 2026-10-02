@@ -1,4 +1,14 @@
 {
     "name": "com.openugd.ui",
-    "rootNamespace": "OpenUGD"
+    "rootNamespace": "OpenUGD",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

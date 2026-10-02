@@ -1,14 +1,33 @@
 {
-    "name": "com.openugd.ui",
-    "displayName": "UI Elements",
-    "version": "0.1.1",
-    "unity": "2021.3",
-    "author": "https://github.com/dorofiykolya",
-    "description": "require .NET 4x\n",
-    "keywords": [
-        "ui"
-    ],
-    "dependencies": {
-    },
-    "category": "Unity"
+  "name": "com.openugd.ui",
+  "displayName": "UI Elements",
+  "version": "0.1.1",
+  "license": "Apache-2.0",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Mykola Dorofii",
+    "email": "dorofiy.kolya@gmail.com",
+    "url": "https://github.com/openugd"
+  },
+  "description": "Small UGUI helpers: flippable graphics, gradient mesh effect, empty raycast target. The components attach to existing uGUI Graphic objects and modify the generated mesh, so no custom shaders or materials are required.",
+  "keywords": [
+    "ui",
+    "ugui",
+    "unity",
+    "gradient",
+    "mesh-effect",
+    "raycast",
+    "flip"
+  ],
+  "licensesUrl": "https://github.com/openugd/upm-ui/blob/master/LICENSE.md",
+  "documentationUrl": "https://github.com/openugd/upm-ui#readme",
+  "changelogUrl": "https://github.com/openugd/upm-ui/blob/master/CHANGELOG.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openugd/upm-ui.git"
+  },
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  }
 }
