@@ -168,7 +168,7 @@ points that reach most projects:
 - **`UIFlippable` no longer moves itself** above the other mesh effects in the editor. Order them in the
   Inspector: flip first to keep an effect's direction, last to mirror it.
 - **Radial and Diamond look different.** With `ModifyVertices` on, Radial built its extra vertices around the
-  pivot instead of the centre of the graphic and replaced the mesh with an ellipse inscribed in the rect, UVs
+  pivot instead of the centre of the graphic and replaced the mesh with an ellipse the size of the rect, UVs
   0 to 1; it now keeps the graphic's outline and its sprite's UVs. Diamond measured the straight-line
   distance from a wrong centre; it is now the Manhattan distance from the centre of the graphic.
 - **Menu.** *UI > EmptyGraphic* is now *UI > Empty Graphic*.
