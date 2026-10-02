@@ -31,8 +31,9 @@ namespace OpenUGD.UI
     /// gradient's direction when the graphic is flipped, or above it to flip the gradient with the graphic.
     /// </para>
     /// <para>
-    /// After the first rebuild a mesh rebuild allocates no managed memory: the work lists come from
-    /// <see cref="ListPool{T}"/>, and the gradient's key times are re-read only when the gradient changed.
+    /// Once its pooled work lists have grown to the size of the mesh, a rebuild allocates no managed memory: the
+    /// work lists come from <see cref="ListPool{T}"/>, and the gradient's key times are re-read only when the
+    /// gradient changed.
     /// </para>
     /// </remarks>
     [MovedFrom(true, sourceNamespace: "UnityEngine.UI")]
@@ -44,7 +45,7 @@ namespace OpenUGD.UI
         private const float MinZoom = 0.1f;
         private const float MaxZoom = 10f;
 
-        // VertexHelper.FillMesh throws above this many vertices.
+        // VertexHelper.FillMesh throws at this many vertices or more.
         private const int MaxVertices = 65000;
 
         [FormerlySerializedAs("gradient_type")] [SerializeField]
@@ -114,7 +115,10 @@ namespace OpenUGD.UI
             /// <summary>The gradient colour replaces the vertex colour.</summary>
             Override = 0,
 
-            /// <summary>The colours are added per channel, alpha included; the result saturates at 1.</summary>
+            /// <summary>
+            /// The colours are added per channel, alpha included; written to the vertex colour, the result
+            /// saturates at 1.
+            /// </summary>
             Add = 1,
 
             /// <summary>The colours are multiplied per channel, alpha included.</summary>
@@ -144,8 +148,8 @@ namespace OpenUGD.UI
         /// </summary>
         /// <remarks>
         /// The getter returns the component's own instance. After changing it in place (for example with
-        /// <see cref="Gradient.SetKeys"/>), call <c>graphic.SetVerticesDirty()</c> or assign it back to this
-        /// property so the mesh is rebuilt.
+        /// <see cref="Gradient.SetKeys"/>), assign it back to this property or call
+        /// <see cref="Graphic.SetVerticesDirty"/> on the graphic so the mesh is rebuilt.
         /// </remarks>
         /// <exception cref="ArgumentNullException">The value is <c>null</c>.</exception>
         public Gradient GradientColor
@@ -228,9 +232,9 @@ namespace OpenUGD.UI
         /// to the vertex bounds.
         /// </summary>
         /// <remarks>
-        /// Above 1 the gradient is stretched (Horizontal and Vertical about the middle of the bounds, Radial and
-        /// Diamond about the centre) so only its middle part shows; below 1 it repeats its end colours beyond
-        /// its ends.
+        /// Above 1 the gradient is stretched so only part of it shows: Horizontal and Vertical stretch about the
+        /// middle of the bounds and show the middle of the gradient, Radial and Diamond stretch from the centre
+        /// and show its start. Below 1 the gradient ends inside the bounds and its end colours fill the rest.
         /// </remarks>
         public float GradientZoom
         {
@@ -274,7 +278,7 @@ namespace OpenUGD.UI
                     {
                         vertexHelper.GetUIVertexStream(mesh);
                         GradientTessellator.Tessellate(mesh, frame, keyTimes);
-                        if (mesh.Count > MaxVertices)
+                        if (!FitsInOneMesh(mesh.Count))
                         {
                             // Too dense to subdivide (long text, say): colour the existing vertices instead.
                             PaintInPlace(vertexHelper, frame);
@@ -305,6 +309,14 @@ namespace OpenUGD.UI
 
             PaintInPlace(vertexHelper, frame);
         }
+
+        /// <summary>
+        /// Whether a mesh of <paramref name="vertexCount"/> vertices stays under uGUI's limit:
+        /// <c>VertexHelper.FillMesh</c> throws at 65,000 vertices or more.
+        /// </summary>
+        /// <param name="vertexCount">The number of vertices.</param>
+        /// <returns><c>true</c> if the mesh can be filled.</returns>
+        internal static bool FitsInOneMesh(int vertexCount) => vertexCount < MaxVertices;
 
         /// <summary>
         /// Combines a vertex colour with a gradient colour.

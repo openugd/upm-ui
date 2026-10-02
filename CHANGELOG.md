@@ -43,11 +43,15 @@ major version. Read *Changed* before upgrading: the namespace moved and three be
   *UI > Effects > Gradient* keep their paths and now sort after Unity's Shadow, Outline and Position As UV1.
   *Migration:* none.
 - The Inspector-only *Modify Tangents* option now applies to all four gradient shapes; Radial and Diamond
-  ignored it. *Migration:* none.
-- The property setters of both effects rebuild the mesh only when the value changes.
-- A mesh that `ModifyVertices` would grow past 65,000 vertices, where `VertexHelper.FillMesh` throws, is
-  coloured without extra vertices instead.
-- Minimum supported editor version raised to Unity 6000.0, with `com.unity.ugui` 2.0.0.
+  ignored it and wrote the vertex colour. *Migration:* to keep colouring a Radial or Diamond gradient
+  through the vertex colour, turn *Modify Tangents* off on it.
+- The property setters of both effects rebuild the mesh only when the value changes (`GradientColor` always
+  does), so assigning a property its current value no longer forces a rebuild. *Migration:* call
+  `SetVerticesDirty()` on the graphic to force one.
+- A mesh that `ModifyVertices` would grow to 65,000 vertices or more, where `VertexHelper.FillMesh` throws,
+  is coloured without extra vertices instead.
+- **Breaking: minimum supported editor version raised to Unity 6000.0**, with `com.unity.ugui` 2.0.0.
+  *Migration:* projects on an older editor stay on 0.1.1.
 - `package.json`: version 2.0.0; `licensesUrl` and `changelogUrl` point at the default branch `main`
   instead of `master` (PK-14); the sample is listed under `samples`. It was earlier updated to the current
   Unity package manifest schema: a real `description`, `author` as an object, `licensesUrl`,

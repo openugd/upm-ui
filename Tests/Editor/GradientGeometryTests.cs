@@ -119,6 +119,15 @@ namespace OpenUGD.UI.Tests
             Assert.That((Color32)GradientMeshEffect.BlendColors(vertex, gradient, GradientMeshEffect.Blend.Add),
                 Is.EqualTo(new Color32(255, 255, 255, 255)), "a vertex colour saturates");
         }
+
+        [Test]
+        public void VertexLimit_IsTheOneVertexHelperFillMeshEnforces()
+        {
+            // VertexHelper.FillMesh throws for 65,000 vertices or more, so a tessellation that reaches exactly
+            // 65,000 must fall back to colouring the mesh in place.
+            Assert.That(GradientMeshEffect.FitsInOneMesh(64999), Is.True);
+            Assert.That(GradientMeshEffect.FitsInOneMesh(65000), Is.False);
+        }
     }
 
     public class GradientTessellatorTests

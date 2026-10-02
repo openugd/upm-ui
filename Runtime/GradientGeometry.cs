@@ -162,7 +162,7 @@ namespace OpenUGD.UI
     /// <para>
     /// <b>Radial</b>: the mesh is cut into <see cref="RadialSectors"/> wedges around the centre, then inside each
     /// wedge along the chord of every key's ellipse. The colour is exact at the centre, at every vertex and on
-    /// the wedge edges, and within 0.5% of the coordinate (cos(pi/32)) elsewhere.
+    /// the wedge edges, and elsewhere within 0.5% of the distance (1 / cos(pi/32) - 1).
     /// </para>
     /// </remarks>
     internal static class GradientTessellator

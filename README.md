@@ -134,9 +134,9 @@ Every setter rebuilds the graphic's mesh when the value changes, so animating `G
   the triangle it was cut from, UVs included, so sliced, tiled and atlas sprites keep their texturing.
   With the gradient's default *Blend* mode, Diamond and the linear shapes come out exact; Radial is split into
   32 wedges and stays within 0.5% of the true distance. Turn it off for meshes that are already dense, such as
-  text. A mesh that would grow past uGUI's 65,000-vertex limit is coloured without extra vertices instead.
+  text. A mesh that would reach uGUI's 65,000-vertex limit is coloured without extra vertices instead.
 - **Changing a gradient in place.** `GradientColor` returns the component's own `Gradient`. After changing its
-  keys in place, assign it back or call `graphic.SetVerticesDirty()` so the mesh is rebuilt.
+  keys in place, assign it back or call `SetVerticesDirty()` on the graphic so the mesh is rebuilt.
 - **Allocation.** Once warm, a rebuild allocates no managed memory: the work lists come from Unity's
   `ListPool`, and the gradient's key times are re-read only when the gradient has changed.
 - **Tangents.** The Inspector-only option *Modify Tangents* writes the blended colour into the vertex tangent
@@ -162,9 +162,10 @@ points that reach most projects:
 
 - **Namespace.** The three components moved from `UnityEngine.UI` to `OpenUGD.UI`. Add `using OpenUGD.UI;` to
   scripts that name them; keep `using UnityEngine.UI;` for `Image`, `Graphic` and the rest of uGUI. Each type
-  carries `[MovedFrom(true, sourceNamespace: "UnityEngine.UI")]`, which lets Unity's API Updater rewrite old
-  references when it runs on a script that no longer compiles. File names, class names and script GUIDs are
-  unchanged, so scenes and prefabs keep their components and serialized values.
+  carries `[MovedFrom(true, sourceNamespace: "UnityEngine.UI")]`, which asks Unity's API Updater to rewrite old
+  references when it runs on a script that no longer compiles; if it leaves a script unchanged, add the
+  `using` line by hand. File names, class names and script GUIDs are unchanged, so scenes and prefabs keep
+  their components and serialized values.
 - **`UIFlippable` no longer moves itself** above the other mesh effects in the editor. Order them in the
   Inspector: flip first to keep an effect's direction, last to mirror it.
 - **Radial and Diamond look different.** With `ModifyVertices` on, Radial built its extra vertices around the
