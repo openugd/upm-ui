@@ -1,7 +1,7 @@
 {
   "name": "com.openugd.ui",
-  "displayName": "UI Elements",
-  "version": "0.1.1",
+  "displayName": "OpenUGD uGUI Components",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "unity": "6000.0",
   "unityRelease": "0f1",
@@ -10,7 +10,7 @@
     "email": "dorofiy.kolya@gmail.com",
     "url": "https://github.com/openugd"
   },
-  "description": "Small UGUI helpers: flippable graphics, gradient mesh effect, empty raycast target. The components attach to existing uGUI Graphic objects and modify the generated mesh, so no custom shaders or materials are required.",
+  "description": "Three uGUI components that work on the mesh uGUI already builds, so they need no shader, material or texture of their own: UIFlippable mirrors a graphic about its rect centre without a negative scale, GradientMeshEffect writes a horizontal, vertical, radial or diamond gradient into the vertex colours, and EmptyGraphic is an invisible raycast target for hit areas and invisible buttons.",
   "keywords": [
     "ui",
     "ugui",
@@ -18,11 +18,12 @@
     "gradient",
     "mesh-effect",
     "raycast",
-    "flip"
+    "flip",
+    "openugd"
   ],
-  "licensesUrl": "https://github.com/openugd/upm-ui/blob/master/LICENSE.md",
+  "licensesUrl": "https://github.com/openugd/upm-ui/blob/main/LICENSE.md",
   "documentationUrl": "https://github.com/openugd/upm-ui#readme",
-  "changelogUrl": "https://github.com/openugd/upm-ui/blob/master/CHANGELOG.md",
+  "changelogUrl": "https://github.com/openugd/upm-ui/blob/main/CHANGELOG.md",
   "repository": {
     "type": "git",
     "url": "https://github.com/openugd/upm-ui.git"

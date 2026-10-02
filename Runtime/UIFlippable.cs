@@ -1,80 +1,103 @@
-﻿namespace UnityEngine.UI
+using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
+using UnityEngine.UI;
+
+namespace OpenUGD.UI
 {
+    /// <summary>
+    /// Mirrors the mesh of the <see cref="Graphic"/> on the same GameObject about the centre of its
+    /// <see cref="RectTransform"/>, horizontally, vertically or both, without a negative scale on the transform.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Only vertex positions change: the texture is mirrored with the geometry, and the
+    /// <see cref="RectTransform"/>, layout and raycast area stay as they are. Mirroring on one axis reverses the
+    /// triangle winding, exactly as a negative scale does; uGUI's default shader draws both faces.
+    /// </para>
+    /// <para>
+    /// Mesh effects run in component order, and this component no longer reorders itself. Put it above another
+    /// effect (a <see cref="GradientMeshEffect"/>, a <see cref="Shadow"/>) to leave that effect's result
+    /// unmirrored, or below it to mirror the result too.
+    /// </para>
+    /// </remarks>
+    [MovedFrom(true, sourceNamespace: "UnityEngine.UI")]
+    [AddComponentMenu("UI/Effects/Flippable", 84)]
     [RequireComponent(typeof(RectTransform), typeof(Graphic))]
     [DisallowMultipleComponent]
-    [AddComponentMenu("UI/Effects/Flippable")]
     public class UIFlippable : BaseMeshEffect
     {
         [SerializeField] private bool _horizontal;
-        [SerializeField] private bool _veritical;
+
+        [FormerlySerializedAs("_veritical")] [SerializeField]
+        private bool _vertical;
 
         /// <summary>
-        ///     Gets or sets a value indicating whether this <see cref="UnityEngine.UI.UIFlippable" /> should be flipped
-        ///     horizontally.
+        /// Whether the graphic is mirrored left to right. Setting a new value rebuilds the graphic's mesh.
         /// </summary>
-        /// <value><c>true</c> if horizontal; otherwise, <c>false</c>.</value>
-        public bool horizontal {
-            get => _horizontal;
-            set => _horizontal = value;
-        }
-
-        /// <summary>
-        ///     Gets or sets a value indicating whether this <see cref="UnityEngine.UI.UIFlippable" /> should be flipped
-        ///     vertically.
-        /// </summary>
-        /// <value><c>true</c> if vertical; otherwise, <c>false</c>.</value>
-        public bool vertical {
-            get => _veritical;
-            set => _veritical = value;
-        }
-
-#if UNITY_EDITOR
-        protected override void Awake() => OnValidate();
-#endif
-
-#if UNITY_EDITOR
-        protected override void OnValidate()
+        public bool horizontal
         {
-            var components = gameObject.GetComponents(typeof(BaseMeshEffect));
-            foreach (var comp in components)
+            get => _horizontal;
+            set
             {
-                if (comp.GetType() != typeof(UIFlippable))
+                if (_horizontal == value)
                 {
-                    UnityEditorInternal.ComponentUtility.MoveComponentUp(this);
+                    return;
                 }
-                else
+
+                _horizontal = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Whether the graphic is mirrored top to bottom. Setting a new value rebuilds the graphic's mesh.
+        /// </summary>
+        public bool vertical
+        {
+            get => _vertical;
+            set
+            {
+                if (_vertical == value)
                 {
-                    break;
+                    return;
                 }
+
+                _vertical = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Mirrors the vertices of <paramref name="vertexHelper"/> about the centre of this GameObject's
+        /// <see cref="RectTransform"/> rect. Called by the <see cref="Graphic"/> while it rebuilds its mesh; does
+        /// nothing while this component is disabled or inactive.
+        /// </summary>
+        /// <param name="vertexHelper">The graphic's mesh, modified in place.</param>
+        public override void ModifyMesh(VertexHelper vertexHelper)
+        {
+            if (!IsActive() || vertexHelper == null || (!_horizontal && !_vertical))
+            {
+                return;
             }
 
-            GetComponent<Graphic>().SetVerticesDirty();
-            base.OnValidate();
-        }
-#endif
-
-        public override void ModifyMesh(VertexHelper verts)
-        {
-            var rt = transform as RectTransform;
-
-            for (var i = 0; i < verts.currentVertCount; ++i)
+            var rectTransform = transform as RectTransform;
+            if (rectTransform == null)
             {
-                var uiVertex = new UIVertex();
-                verts.PopulateUIVertex(ref uiVertex, i);
+                return;
+            }
 
-                // Modify positions
-                uiVertex.position = new Vector3(
-                    _horizontal
-                        ? uiVertex.position.x + (rt.rect.center.x - uiVertex.position.x) * 2
-                        : uiVertex.position.x,
-                    _veritical
-                        ? uiVertex.position.y + (rt.rect.center.y - uiVertex.position.y) * 2
-                        : uiVertex.position.y,
-                    uiVertex.position.z
-                );
+            MeshMirror.Mirror(vertexHelper, rectTransform.rect.center, _horizontal, _vertical);
+        }
 
-                // Apply
-                verts.SetUIVertex(uiVertex, i);
+        // The setters run outside a rebuild, often from code that has just added the component; Unity's == treats a
+        // destroyed or missing Graphic as null.
+        private void SetDirty()
+        {
+            var target = graphic;
+            if (target != null)
+            {
+                target.SetVerticesDirty();
             }
         }
     }

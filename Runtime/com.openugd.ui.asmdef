@@ -1,7 +1,9 @@
 {
     "name": "com.openugd.ui",
-    "rootNamespace": "OpenUGD",
-    "references": [],
+    "rootNamespace": "OpenUGD.UI",
+    "references": [
+        "UnityEngine.UI"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

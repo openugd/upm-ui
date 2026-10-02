@@ -1,186 +1,51 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Pool;
+using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
-namespace UnityEngine.UI
+namespace OpenUGD.UI
 {
+    /// <summary>
+    /// Colours the mesh of the <see cref="Graphic"/> on the same GameObject with a <see cref="Gradient"/>, by
+    /// writing the gradient into the vertex colours. Needs no shader, material or texture of its own.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The gradient is laid out on the bounds of the mesh's vertices, so it does not depend on the
+    /// <c>RectTransform</c> pivot. <see cref="GradientType"/> picks the shape, <see cref="GradientZoom"/> and
+    /// <see cref="GradientOffset"/> scale and slide it, and <see cref="BlendMode"/> decides how it combines with
+    /// the colour the graphic already gave each vertex (its <c>color</c> property, a previous effect).
+    /// </para>
+    /// <para>
+    /// A GPU interpolates vertex colours linearly across each triangle, so a quad's four corners cannot show a
+    /// gradient with a key in the middle, a radial shape or a diamond. With <see cref="ModifyVertices"/> on, the
+    /// effect cuts the triangles where the gradient needs vertices (at every colour and alpha key, and around the
+    /// centre for Radial and Diamond). The outline is kept and every new vertex is interpolated from the triangle
+    /// it came from, UVs included, so sliced, tiled and atlas sprites keep their texturing.
+    /// </para>
+    /// <para>
+    /// Mesh effects run in component order. Put this component below a <see cref="UIFlippable"/> to keep the
+    /// gradient's direction when the graphic is flipped, or above it to flip the gradient with the graphic.
+    /// </para>
+    /// <para>
+    /// After the first rebuild a mesh rebuild allocates no managed memory: the work lists come from
+    /// <see cref="ListPool{T}"/>, and the gradient's key times are re-read only when the gradient changed.
+    /// </para>
+    /// </remarks>
+    [MovedFrom(true, sourceNamespace: "UnityEngine.UI")]
+    [AddComponentMenu("UI/Effects/Gradient", 83)]
     [RequireComponent(typeof(RectTransform), typeof(Graphic))]
     [DisallowMultipleComponent]
-    [AddComponentMenu("UI/Effects/Gradient")]
     public class GradientMeshEffect : BaseMeshEffect
     {
-        #region Public Method
+        private const float MinZoom = 0.1f;
+        private const float MaxZoom = 10f;
 
-        public override void ModifyMesh(VertexHelper vertexHelper)
-        {
-            if (!IsActive() || vertexHelper.currentVertCount == 0)
-            {
-                return;
-            }
-
-            var vertices = new List<UIVertex>();
-
-            vertexHelper.GetUIVertexStream(vertices);
-
-            var vCount = vertices.Count;
-            switch (GradientType)
-            {
-                case Type.Horizontal:
-                case Type.Vertical:
-                {
-                    var bounds = GetBounds(vertices);
-                    var min = bounds.xMin;
-                    var w = bounds.width;
-                    Func<UIVertex, float> getPosition = v => v.position.x;
-
-                    if (GradientType == Type.Vertical)
-                    {
-                        min = bounds.yMin;
-                        w = bounds.height;
-                        getPosition = v => v.position.y;
-                    }
-
-                    var width = w == 0.0f ? 0.0f : 1.0f / w / GradientZoom;
-                    var zoomOffset = (1.0f - 1.0f / GradientZoom) * 0.5f;
-                    var offset = GradientOffset * (1.0f - zoomOffset) - zoomOffset;
-
-                    if (ModifyVertices)
-                    {
-                        SplitTrianglesAtGradientStops(vertices, bounds, zoomOffset, vertexHelper);
-                    }
-
-                    var vertex = new UIVertex();
-                    for (var i = 0; i < vertexHelper.currentVertCount; i++)
-                    {
-                        vertexHelper.PopulateUIVertex(ref vertex, i);
-                        if (modifyTangents)
-                        {
-                            vertex.tangent = BlendColor(vertex.color,
-                                GradientColor.Evaluate((getPosition(vertex) - min) * width - offset));
-                        }
-                        else
-                        {
-                            vertex.color = BlendColor(vertex.color,
-                                GradientColor.Evaluate((getPosition(vertex) - min) * width - offset));
-                        }
-
-                        vertexHelper.SetUIVertex(vertex, i);
-                    }
-                }
-                    break;
-
-                case Type.Diamond:
-                {
-                    var bounds = GetBounds(vertices);
-
-                    var height = bounds.height == 0.0f ? 0.0f : 1.0f / bounds.height / GradientZoom;
-                    var radius = bounds.center.y / 2.0f;
-                    var center = (Vector3.right + Vector3.up) * radius + Vector3.forward * vertices[0].position.z;
-
-                    if (ModifyVertices)
-                    {
-                        vertexHelper.Clear();
-                        for (var i = 0; i < vCount; i++)
-                        {
-                            vertexHelper.AddVert(vertices[i]);
-                        }
-
-                        var centralVertex = new UIVertex();
-                        centralVertex.position = center;
-                        centralVertex.normal = vertices[0].normal;
-                        centralVertex.uv0 = new Vector2(0.5f, 0.5f);
-                        centralVertex.color = Color.white;
-                        vertexHelper.AddVert(centralVertex);
-
-                        for (var i = 1; i < vCount; i++)
-                        {
-                            vertexHelper.AddTriangle(i - 1, i, vCount);
-                        }
-
-                        vertexHelper.AddTriangle(0, vCount - 1, vCount);
-                    }
-
-                    var vertex = new UIVertex();
-
-                    for (var i = 0; i < vertexHelper.currentVertCount; i++)
-                    {
-                        vertexHelper.PopulateUIVertex(ref vertex, i);
-
-                        vertex.color = BlendColor(vertex.color,
-                            GradientColor.Evaluate(Vector3.Distance(vertex.position, center) * height -
-                                                   GradientOffset));
-                        vertexHelper.SetUIVertex(vertex, i);
-                    }
-                }
-                    break;
-
-                case Type.Radial:
-                {
-                    var bounds = GetBounds(vertices);
-
-                    var width = bounds.width == 0.0f ? 0.0f : 1.0f / bounds.width / GradientZoom;
-                    var height = bounds.height == 0.0f ? 0.0f : 1.0f / bounds.height / GradientZoom;
-
-                    if (ModifyVertices)
-                    {
-                        vertexHelper.Clear();
-
-                        var radiusX = bounds.width / 2.0f;
-                        var radiusY = bounds.height / 2.0f;
-                        var centralVertex = new UIVertex();
-                        centralVertex.position = Vector3.right * bounds.center.x + Vector3.up * bounds.center.y +
-                                                 Vector3.forward * vertices[0].position.z;
-                        centralVertex.normal = vertices[0].normal;
-                        centralVertex.uv0 = new Vector2(0.5f, 0.5f);
-                        centralVertex.color = Color.white;
-
-                        var steps = 64;
-                        for (var i = 0; i < steps; i++)
-                        {
-                            var curVertex = new UIVertex();
-                            var angle = i * 360.0f / steps;
-                            var cosX = Mathf.Cos(Mathf.Deg2Rad * angle);
-                            var cosY = Mathf.Sin(Mathf.Deg2Rad * angle);
-
-                            curVertex.position = Vector3.right * cosX * radiusX + Vector3.up * cosY * radiusY +
-                                                 Vector3.forward * vertices[0].position.z;
-                            curVertex.normal = vertices[0].normal;
-                            curVertex.uv0 = new Vector2((cosX + 1) * 0.5f, (cosY + 1) * 0.5f);
-                            curVertex.color = Color.white;
-                            vertexHelper.AddVert(curVertex);
-                        }
-
-                        vertexHelper.AddVert(centralVertex);
-
-                        for (var i = 1; i < steps; i++)
-                        {
-                            vertexHelper.AddTriangle(i - 1, i, steps);
-                        }
-
-                        vertexHelper.AddTriangle(0, steps - 1, steps);
-                    }
-
-                    var vertex = new UIVertex();
-
-                    for (var i = 0; i < vertexHelper.currentVertCount; i++)
-                    {
-                        vertexHelper.PopulateUIVertex(ref vertex, i);
-
-                        vertex.color = BlendColor(vertex.color, GradientColor.Evaluate(Mathf.Sqrt(
-                            Mathf.Pow(Mathf.Abs(vertex.position.x - bounds.center.x) * width, 2.0f) +
-                            Mathf.Pow(Mathf.Abs(vertex.position.y - bounds.center.y) * height, 2.0f)
-                        ) * 2.0f - GradientOffset));
-
-                        vertexHelper.SetUIVertex(vertex, i);
-                    }
-                }
-                    break;
-            }
-        }
-
-        #endregion
-
-        #region Serialize Fields
+        // VertexHelper.FillMesh throws above this many vertices.
+        private const int MaxVertices = 65000;
 
         [FormerlySerializedAs("gradient_type")] [SerializeField]
         private Type gradientType = Type.Horizontal;
@@ -189,434 +54,383 @@ namespace UnityEngine.UI
         private Blend blendMode = Blend.Multiply;
 
         [FormerlySerializedAs("modify_vertices")]
-        [Tooltip(
-            "Add vertices to display complex gradients. Turn off if your shape is already very complex, like text.")]
+        [Tooltip("Add vertices so the gradient shows its keys, and Radial and Diamond shapes, on simple meshes. " +
+                 "Turn it off for meshes that are already dense, such as text.")]
         [SerializeField]
         private bool modifyVertices = true;
 
-        [FormerlySerializedAs("modify_tangents")] [SerializeField]
+        [FormerlySerializedAs("modify_tangents")]
+        [Tooltip("Write the blended colour into the vertex tangent instead of the vertex colour, for a custom " +
+                 "shader that reads it from there. The vertex colour is then left unchanged.")]
+        [SerializeField]
         private bool modifyTangents;
 
         [FormerlySerializedAs("gradient_offset")] [SerializeField] [Range(-1.0f, 1.0f)]
         private float gradientOffset;
 
-        [FormerlySerializedAs("gradient_zoom")] [SerializeField] [Range(0.1f, 10.0f)]
+        [FormerlySerializedAs("gradient_zoom")] [SerializeField] [Range(MinZoom, MaxZoom)]
         private float gradientZoom = 1.0f;
 
         [FormerlySerializedAs("gradient_color")] [SerializeField]
-        private Gradient gradientColor = new() {
-            colorKeys = new[]
-                { new GradientColorKey(Color.black, 0.0f), new GradientColorKey(Color.white, 1.0f) }
+        private Gradient gradientColor = new Gradient
+        {
+            colorKeys = new[] { new GradientColorKey(Color.black, 0.0f), new GradientColorKey(Color.white, 1.0f) }
         };
 
-        #endregion
+        // The key times of the gradient they were read from, and a copy of that gradient to detect changes.
+        // Gradient.colorKeys and alphaKeys allocate arrays, so they are read only when the gradient differs.
+        [NonSerialized] private readonly List<float> _keyTimes = new List<float>(16);
+        [NonSerialized] private Gradient _keyTimesSource;
 
-        #region Public Fields
+        /// <summary>
+        /// The shape of the gradient.
+        /// </summary>
+        public enum Type : byte
+        {
+            /// <summary>Left to right across the vertex bounds.</summary>
+            Horizontal = 0,
 
-        public Blend BlendMode {
+            /// <summary>Bottom to top across the vertex bounds.</summary>
+            Vertical = 1,
+
+            /// <summary>
+            /// Outwards from the centre of the vertex bounds by elliptical distance: the gradient's end is on the
+            /// ellipse inscribed in the bounds.
+            /// </summary>
+            Radial = 2,
+
+            /// <summary>
+            /// Outwards from the centre of the vertex bounds by Manhattan distance: the gradient's end is on the
+            /// diamond whose corners touch the middle of each edge of the bounds.
+            /// </summary>
+            Diamond = 3
+        }
+
+        /// <summary>
+        /// How the gradient colour combines with the colour a vertex already has.
+        /// </summary>
+        public enum Blend : byte
+        {
+            /// <summary>The gradient colour replaces the vertex colour.</summary>
+            Override = 0,
+
+            /// <summary>The colours are added per channel, alpha included; the result saturates at 1.</summary>
+            Add = 1,
+
+            /// <summary>The colours are multiplied per channel, alpha included.</summary>
+            Multiply = 2
+        }
+
+        /// <summary>
+        /// How the gradient combines with the colour a vertex already has. Default <see cref="Blend.Multiply"/>.
+        /// </summary>
+        public Blend BlendMode
+        {
             get => blendMode;
-            set {
-                blendMode = value;
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        public Gradient GradientColor {
-            get => gradientColor;
-            set {
-                gradientColor = value;
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        public Type GradientType {
-            get => gradientType;
-            set {
-                gradientType = value;
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        public bool ModifyVertices {
-            get => modifyVertices;
-            set {
-                modifyVertices = value;
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        public float GradientOffset {
-            get => gradientOffset;
-            set {
-                gradientOffset = Mathf.Clamp(value, -1.0f, 1.0f);
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        public float GradientZoom {
-            get => gradientZoom;
-            set {
-                gradientZoom = Mathf.Clamp(value, 0.1f, 10.0f);
-                graphic.SetVerticesDirty();
-            }
-        }
-
-        #endregion
-
-        #region Private Method
-
-        private static Rect GetBounds(List<UIVertex> vertices)
-        {
-            var left = vertices[0].position.x;
-            var right = left;
-            var bottom = vertices[0].position.y;
-            var top = bottom;
-
-            for (var i = vertices.Count - 1; i >= 1; --i)
+            set
             {
-                var x = vertices[i].position.x;
-                var y = vertices[i].position.y;
-
-                if (x > right)
+                if (blendMode == value)
                 {
-                    right = x;
-                }
-                else if (x < left)
-                {
-                    left = x;
+                    return;
                 }
 
-                if (y > top)
-                {
-                    top = y;
-                }
-                else if (y < bottom)
-                {
-                    bottom = y;
-                }
+                blendMode = value;
+                SetDirty();
             }
-
-            return new Rect(left, bottom, right - left, top - bottom);
         }
 
-        private void SplitTrianglesAtGradientStops(List<UIVertex> vertexList, Rect bounds, float zoomOffset,
-            VertexHelper helper)
+        /// <summary>
+        /// The gradient: black to white by default.
+        /// </summary>
+        /// <remarks>
+        /// The getter returns the component's own instance. After changing it in place (for example with
+        /// <see cref="Gradient.SetKeys"/>), call <c>graphic.SetVerticesDirty()</c> or assign it back to this
+        /// property so the mesh is rebuilt.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">The value is <c>null</c>.</exception>
+        public Gradient GradientColor
         {
-            var stops = FindStops(zoomOffset, bounds);
-            if (stops.Count <= 0)
+            get => gradientColor;
+            set
+            {
+                gradientColor = value ?? throw new ArgumentNullException(nameof(value));
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// The shape of the gradient. Default <see cref="Type.Horizontal"/>.
+        /// </summary>
+        public Type GradientType
+        {
+            get => gradientType;
+            set
+            {
+                if (gradientType == value)
+                {
+                    return;
+                }
+
+                gradientType = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Whether to add vertices where the gradient needs them. Default <c>true</c>.
+        /// </summary>
+        /// <remarks>
+        /// Without extra vertices a gradient can only be as detailed as the mesh: on a simple quad a Radial or
+        /// Diamond gradient gives all four corners the same colour, and a key between the ends does not show.
+        /// Turn it off for meshes that are already dense, such as text, where the extra vertices cost more than
+        /// they add.
+        /// </remarks>
+        public bool ModifyVertices
+        {
+            get => modifyVertices;
+            set
+            {
+                if (modifyVertices == value)
+                {
+                    return;
+                }
+
+                modifyVertices = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Slides the gradient along its shape, from -1 to 1; values outside are clamped. Default 0.
+        /// </summary>
+        /// <remarks>
+        /// For Radial and Diamond the offset is subtracted from the gradient coordinate, so a positive offset
+        /// pushes the colours outwards. For Horizontal and Vertical it is scaled by the zoom as well.
+        /// </remarks>
+        public float GradientOffset
+        {
+            get => gradientOffset;
+            set
+            {
+                value = Mathf.Clamp(value, -1.0f, 1.0f);
+                if (gradientOffset == value)
+                {
+                    return;
+                }
+
+                gradientOffset = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Magnifies the gradient, from 0.1 to 10; values outside are clamped. Default 1, which fits the gradient
+        /// to the vertex bounds.
+        /// </summary>
+        /// <remarks>
+        /// Above 1 the gradient is stretched (Horizontal and Vertical about the middle of the bounds, Radial and
+        /// Diamond about the centre) so only its middle part shows; below 1 it repeats its end colours beyond
+        /// its ends.
+        /// </remarks>
+        public float GradientZoom
+        {
+            get => gradientZoom;
+            set
+            {
+                value = Mathf.Clamp(value, MinZoom, MaxZoom);
+                if (gradientZoom == value)
+                {
+                    return;
+                }
+
+                gradientZoom = value;
+                SetDirty();
+            }
+        }
+
+        /// <summary>
+        /// Writes the gradient into the vertices of <paramref name="vertexHelper"/>. Called by the
+        /// <see cref="Graphic"/> while it rebuilds its mesh; does nothing while this component is disabled or
+        /// inactive.
+        /// </summary>
+        /// <param name="vertexHelper">The graphic's mesh, modified in place.</param>
+        public override void ModifyMesh(VertexHelper vertexHelper)
+        {
+            if (!IsActive() || vertexHelper == null || vertexHelper.currentVertCount == 0 || gradientColor == null)
             {
                 return;
             }
 
-            helper.Clear();
+            var frame = GradientFrame.Create(gradientType, GetBounds(vertexHelper),
+                Mathf.Clamp(gradientOffset, -1f, 1f), Mathf.Clamp(gradientZoom, MinZoom, MaxZoom));
 
-            var vCount = vertexList.Count;
-            for (var i = 0; i < vCount; i += 3)
+            if (modifyVertices)
             {
-                var positions = GetPositions(vertexList, i);
-                var originIndices = new List<int>(3);
-                var starts = new List<UIVertex>(3);
-                var ends = new List<UIVertex>(2);
-
-                for (var s = 0; s < stops.Count; s++)
+                var keyTimes = GetKeyTimes();
+                if (GradientTessellator.NeedsTessellation(frame, keyTimes))
                 {
-                    var initialCount = helper.currentVertCount;
-                    var hadEnds = ends.Count > 0;
-                    var earlyStart = false;
-
-                    // find any start vertices for this stop
-                    for (var p = 0; p < 3; p++)
+                    var mesh = ListPool<UIVertex>.Get();
+                    try
                     {
-                        if (!originIndices.Contains(p) && positions[p] < stops[s])
+                        vertexHelper.GetUIVertexStream(mesh);
+                        GradientTessellator.Tessellate(mesh, frame, keyTimes);
+                        if (mesh.Count > MaxVertices)
                         {
-                            // make sure the first index crosses the stop
-                            var p1 = (p + 1) % 3;
-                            var start = vertexList[p + i];
-                            if (positions[p1] > stops[s])
-                            {
-                                originIndices.Insert(0, p);
-                                starts.Insert(0, start);
-                                earlyStart = true;
-                            }
-                            else
-                            {
-                                originIndices.Add(p);
-                                starts.Add(start);
-                            }
-                        }
-                    }
-
-                    // bail if all before or after the stop
-                    if (originIndices.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    if (originIndices.Count == 3)
-                    {
-                        break;
-                    }
-
-                    // report any start vertices
-                    foreach (var start in starts)
-                    {
-                        helper.AddVert(start);
-                    }
-
-                    // make two ends, splitting at the stop
-                    ends.Clear();
-                    foreach (var index in originIndices)
-                    {
-                        var oppositeIndex = (index + 1) % 3;
-                        if (positions[oppositeIndex] < stops[s])
-                        {
-                            oppositeIndex = (oppositeIndex + 1) % 3;
+                            // Too dense to subdivide (long text, say): colour the existing vertices instead.
+                            PaintInPlace(vertexHelper, frame);
+                            return;
                         }
 
-                        ends.Add(CreateSplitVertex(vertexList[index + i], vertexList[oppositeIndex + i], stops[s]));
-                    }
-
-                    if (ends.Count == 1)
-                    {
-                        var oppositeIndex = (originIndices[0] + 2) % 3;
-                        ends.Add(CreateSplitVertex(vertexList[originIndices[0] + i], vertexList[oppositeIndex + i],
-                            stops[s]));
-                    }
-
-                    // report end vertices
-                    foreach (var end in ends)
-                    {
-                        helper.AddVert(end);
-                    }
-
-                    // make triangles
-                    if (hadEnds)
-                    {
-                        helper.AddTriangle(initialCount - 2, initialCount, initialCount + 1);
-                        helper.AddTriangle(initialCount - 2, initialCount + 1, initialCount - 1);
-                        if (starts.Count > 0)
+                        vertexHelper.Clear();
+                        for (var i = 0; i < mesh.Count; i++)
                         {
-                            if (earlyStart)
-                            {
-                                helper.AddTriangle(initialCount - 2, initialCount + 3, initialCount);
-                            }
-                            else
-                            {
-                                helper.AddTriangle(initialCount + 1, initialCount + 3, initialCount - 1);
-                            }
+                            var vertex = mesh[i];
+                            Paint(ref vertex, frame);
+                            vertexHelper.AddVert(vertex);
+                        }
+
+                        for (var i = 0; i + 2 < mesh.Count; i += 3)
+                        {
+                            vertexHelper.AddTriangle(i, i + 1, i + 2);
                         }
                     }
-                    else
+                    finally
                     {
-                        var vertexCount = helper.currentVertCount;
-                        helper.AddTriangle(initialCount, vertexCount - 2, vertexCount - 1);
-
-                        if (starts.Count > 1)
-                        {
-                            helper.AddTriangle(initialCount, vertexCount - 1, initialCount + 1);
-                        }
+                        ListPool<UIVertex>.Release(mesh);
                     }
 
-                    starts.Clear();
+                    return;
                 }
+            }
 
-                // clean up after looping through gradient stops
-                if (ends.Count > 0)
-                {
-                    // find any final vertices after the gradient stops
-                    if (starts.Count == 0)
-                    {
-                        for (var p = 0; p < 3; p++)
-                        {
-                            if (!originIndices.Contains(p) && positions[p] > stops[stops.Count - 1])
-                            {
-                                var p1 = (p + 1) % 3;
-                                var end = vertexList[p + i];
-                                if (positions[p1] > stops[stops.Count - 1])
-                                {
-                                    starts.Insert(0, end);
-                                }
-                                else
-                                {
-                                    starts.Add(end);
-                                }
-                            }
-                        }
-                    }
+            PaintInPlace(vertexHelper, frame);
+        }
 
-                    // report final vertices
-                    foreach (var start in starts)
-                    {
-                        helper.AddVert(start);
-                    }
-
-                    // make final triangle(s)
-                    var vertexCount = helper.currentVertCount;
-                    if (starts.Count > 1)
-                    {
-                        helper.AddTriangle(vertexCount - 4, vertexCount - 2, vertexCount - 1);
-                        helper.AddTriangle(vertexCount - 4, vertexCount - 1, vertexCount - 3);
-                    }
-                    else if (starts.Count > 0)
-                    {
-                        helper.AddTriangle(vertexCount - 3, vertexCount - 1, vertexCount - 2);
-                    }
-                }
-                else
-                {
-                    // if the triangle wasn't split, add it as-is
-                    helper.AddVert(vertexList[i]);
-                    helper.AddVert(vertexList[i + 1]);
-                    helper.AddVert(vertexList[i + 2]);
-                    var vertexCount = helper.currentVertCount;
-                    helper.AddTriangle(vertexCount - 3, vertexCount - 2, vertexCount - 1);
-                }
+        /// <summary>
+        /// Combines a vertex colour with a gradient colour.
+        /// </summary>
+        /// <param name="vertexColor">The colour the vertex already has.</param>
+        /// <param name="gradientColor">The gradient's colour at the vertex.</param>
+        /// <param name="mode">How to combine them.</param>
+        /// <returns>The combined colour, not clamped (a <see cref="Color32"/> vertex colour saturates it).</returns>
+        internal static Color BlendColors(Color vertexColor, Color gradientColor, Blend mode)
+        {
+            switch (mode)
+            {
+                case Blend.Add:
+                    return vertexColor + gradientColor;
+                case Blend.Multiply:
+                    return vertexColor * gradientColor;
+                default:
+                    return gradientColor;
             }
         }
 
-        private float[] GetPositions(List<UIVertex> vertexList, int index)
+        private void PaintInPlace(VertexHelper vertexHelper, in GradientFrame frame)
         {
-            var positions = new float[3];
-            if (GradientType == Type.Horizontal)
+            var vertex = new UIVertex();
+            var count = vertexHelper.currentVertCount;
+            for (var i = 0; i < count; i++)
             {
-                positions[0] = vertexList[index].position.x;
-                positions[1] = vertexList[index + 1].position.x;
-                positions[2] = vertexList[index + 2].position.x;
+                vertexHelper.PopulateUIVertex(ref vertex, i);
+                Paint(ref vertex, frame);
+                vertexHelper.SetUIVertex(vertex, i);
+            }
+        }
+
+        private void Paint(ref UIVertex vertex, in GradientFrame frame)
+        {
+            var color = BlendColors(vertex.color, gradientColor.Evaluate(frame.Evaluate(vertex.position)), blendMode);
+            if (modifyTangents)
+            {
+                vertex.tangent = color;
             }
             else
             {
-                positions[0] = vertexList[index].position.y;
-                positions[1] = vertexList[index + 1].position.y;
-                positions[2] = vertexList[index + 2].position.y;
+                vertex.color = color;
             }
-
-            return positions;
         }
 
-        private List<float> FindStops(float zoomOffset, Rect bounds)
+        private List<float> GetKeyTimes()
         {
-            var stops = new List<float>();
-            var offset = GradientOffset * (1.0f - zoomOffset);
-            var startBoundary = zoomOffset - offset;
-            var endBoundary = 1.0f - zoomOffset - offset;
-
-            foreach (var color in GradientColor.colorKeys)
+            if (_keyTimesSource != null && _keyTimesSource.Equals(gradientColor))
             {
-                if (color.time >= endBoundary)
-                {
-                    break;
-                }
-
-                if (color.time > startBoundary)
-                {
-                    stops.Add((color.time - startBoundary) * GradientZoom);
-                }
+                return _keyTimes;
             }
 
-            foreach (var alpha in GradientColor.alphaKeys)
+            var colorKeys = gradientColor.colorKeys;
+            var alphaKeys = gradientColor.alphaKeys;
+            _keyTimes.Clear();
+            for (var i = 0; i < colorKeys.Length; i++)
             {
-                if (alpha.time >= endBoundary)
-                {
-                    break;
-                }
-
-                if (alpha.time > startBoundary)
-                {
-                    stops.Add((alpha.time - startBoundary) * GradientZoom);
-                }
+                AddKeyTime(colorKeys[i].time);
             }
 
-            var min = bounds.xMin;
-            var size = bounds.width;
-            if (GradientType == Type.Vertical)
+            for (var i = 0; i < alphaKeys.Length; i++)
             {
-                min = bounds.yMin;
-                size = bounds.height;
+                AddKeyTime(alphaKeys[i].time);
             }
 
-            stops.Sort();
-            for (var i = 0; i < stops.Count; i++)
+            if (_keyTimesSource == null)
             {
-                stops[i] = stops[i] * size + min;
-
-                if (i > 0 && Math.Abs(stops[i] - stops[i - 1]) < 2)
-                {
-                    stops.RemoveAt(i);
-                    --i;
-                }
+                _keyTimesSource = new Gradient();
             }
 
-            return stops;
+            _keyTimesSource.SetKeys(colorKeys, alphaKeys);
+            _keyTimesSource.mode = gradientColor.mode;
+            _keyTimesSource.colorSpace = gradientColor.colorSpace;
+            return _keyTimes;
         }
 
-        private UIVertex CreateSplitVertex(UIVertex vertex1, UIVertex vertex2, float stop)
+        // Keeps _keyTimes sorted and free of duplicates (a colour key and an alpha key often share a time).
+        private void AddKeyTime(float time)
         {
-            if (GradientType == Type.Horizontal)
+            var index = 0;
+            while (index < _keyTimes.Count && _keyTimes[index] < time)
             {
-                var sx = vertex1.position.x - stop;
-                var dx = vertex1.position.x - vertex2.position.x;
-                var dy = vertex1.position.y - vertex2.position.y;
-                var uvx = vertex1.uv0.x - vertex2.uv0.x;
-                var uvy = vertex1.uv0.y - vertex2.uv0.y;
-                var ratio = sx / dx;
-                var splitY = vertex1.position.y - dy * ratio;
-
-                var splitVertex = new UIVertex();
-                splitVertex.position = new Vector3(stop, splitY, vertex1.position.z);
-                splitVertex.normal = vertex1.normal;
-                splitVertex.uv0 = new Vector2(vertex1.uv0.x - uvx * ratio, vertex1.uv0.y - uvy * ratio);
-                splitVertex.color = Color.white;
-                return splitVertex;
+                index++;
             }
-            else
+
+            if (index < _keyTimes.Count && Mathf.Abs(_keyTimes[index] - time) < 1e-5f)
             {
-                var sy = vertex1.position.y - stop;
-                var dy = vertex1.position.y - vertex2.position.y;
-                var dx = vertex1.position.x - vertex2.position.x;
-                var uvx = vertex1.uv0.x - vertex2.uv0.x;
-                var uvy = vertex1.uv0.y - vertex2.uv0.y;
-                var ratio = sy / dy;
-                var splitX = vertex1.position.x - dx * ratio;
-
-                var splitVertex = new UIVertex();
-                splitVertex.position = new Vector3(splitX, stop, vertex1.position.z);
-                splitVertex.normal = vertex1.normal;
-                splitVertex.uv0 = new Vector2(vertex1.uv0.x - uvx * ratio, vertex1.uv0.y - uvy * ratio);
-                splitVertex.color = Color.white;
-                return splitVertex;
+                return;
             }
-        }
 
-        private Color BlendColor(Color colorA, Color colorB)
-        {
-            switch (BlendMode)
+            if (index > 0 && Mathf.Abs(_keyTimes[index - 1] - time) < 1e-5f)
             {
-                case Blend.Add: return colorA + colorB;
-                case Blend.Multiply: return colorA * colorB;
+                return;
+            }
 
-                default: return colorB;
+            _keyTimes.Insert(index, time);
+        }
+
+        private static Rect GetBounds(VertexHelper vertexHelper)
+        {
+            var vertex = new UIVertex();
+            vertexHelper.PopulateUIVertex(ref vertex, 0);
+            var min = (Vector2)vertex.position;
+            var max = min;
+            var count = vertexHelper.currentVertCount;
+            for (var i = 1; i < count; i++)
+            {
+                vertexHelper.PopulateUIVertex(ref vertex, i);
+                var position = vertex.position;
+                min = Vector2.Min(min, position);
+                max = Vector2.Max(max, position);
+            }
+
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        }
+
+        // The setters run outside a rebuild, often from code that has just added the component; Unity's == treats a
+        // destroyed or missing Graphic as null.
+        private void SetDirty()
+        {
+            var target = graphic;
+            if (target != null)
+            {
+                target.SetVerticesDirty();
             }
         }
-
-        #endregion
-
-        #region Public Enum
-
-        public enum Type : byte
-        {
-            Horizontal = 0,
-            Vertical = 1,
-            Radial = 2,
-            Diamond = 3
-        }
-
-        public enum Blend : byte
-        {
-            Override = 0,
-            Add = 1,
-            Multiply = 2
-        }
-
-        #endregion
     }
 }
