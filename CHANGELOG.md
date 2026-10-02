@@ -49,7 +49,7 @@ major version. Read *Changed* before upgrading: the namespace moved and three be
   coloured without extra vertices instead.
 - Minimum supported editor version raised to Unity 6000.0, with `com.unity.ugui` 2.0.0.
 - `package.json`: version 2.0.0; `licensesUrl` and `changelogUrl` point at the default branch `main`
-  instead of `master` (PK-14). It was earlier updated to the current
+  instead of `master` (PK-14); the sample is listed under `samples`. It was earlier updated to the current
   Unity package manifest schema: a real `description`, `author` as an object, `licensesUrl`,
   `documentationUrl`, `changelogUrl` and `repository`; the obsolete `category` key was removed.
 - `Runtime/com.openugd.ui.asmdef`: `rootNamespace` is `OpenUGD.UI`, it references `UnityEngine.UI` by name
@@ -91,6 +91,8 @@ major version. Read *Changed* before upgrading: the namespace moved and three be
   centre, nothing while disabled, setters dirty the mesh, gradient end colours, blend modes, Radial and
   Diamond centred with a (0, 0) pivot, UVs inside the original UV rect, no allocation once warm, and
   `EmptyGraphic` emitting no vertices while accepting raycasts) carry `[Category("RequiresUnity")]`.
+- The **Components Demo** sample (`Samples~/ComponentsDemo`): all three components on one canvas, built in
+  code.
 - README with install instructions, quick start, and an API overview.
 - This changelog.
 - `.gitignore` for a Unity UPM package repository.

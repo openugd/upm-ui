@@ -1,0 +1,17 @@
+{
+    "name": "com.openugd.ui.samples.componentsdemo",
+    "rootNamespace": "OpenUGD.UI.Samples",
+    "references": [
+        "com.openugd.ui",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

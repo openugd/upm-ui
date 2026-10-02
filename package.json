@@ -30,5 +30,12 @@
   },
   "dependencies": {
     "com.unity.ugui": "2.0.0"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Components Demo",
+      "description": "All three components on one canvas, built in code: text mirrored four ways by UIFlippable (one copy flipping every second), the four GradientMeshEffect shapes (one on a graphic whose pivot is in the corner, one animating its offset), and an invisible Button whose hit area is an EmptyGraphic. Put UIComponentsDemo on an empty GameObject and enter Play mode.",
+      "path": "Samples~/ComponentsDemo"
+    }
+  ]
 }

@@ -149,6 +149,12 @@ The hit area is the `RectTransform` rect, as for any graphic: `GraphicRaycaster`
 Use it instead of an `Image` with zero alpha, which still builds a mesh and is drawn unless its
 `CanvasRenderer` culls transparent meshes.
 
+## Samples
+
+**Components Demo** (Package Manager > OpenUGD uGUI Components > Samples) builds one canvas in code with all
+three components: text flipped four ways, the four gradient shapes (one on a graphic with its pivot in the
+corner) and an invisible button. Put `UIComponentsDemo` on an empty GameObject and enter Play mode.
+
 ## Upgrading from 0.1.x
 
 2.0.0 joins the OpenUGD 2.0 family. Everything breaking is listed in [CHANGELOG.md](CHANGELOG.md); the
