@@ -32,8 +32,8 @@ namespace OpenUGD.UI
     /// </para>
     /// <para>
     /// Once its pooled work lists have grown to the size of the mesh, a rebuild allocates no managed memory: the
-    /// work lists come from <see cref="ListPool{T}"/>, and the gradient's key times are re-read only when the
-    /// gradient changed.
+    /// work lists come from <see cref="ListPool{T}"/>, and the gradient's key times are re-read only after
+    /// <see cref="GradientColor"/> is assigned, the component is enabled or it is edited in the Inspector.
     /// </para>
     /// </remarks>
     [MovedFrom(true, sourceNamespace: "UnityEngine.UI")]
@@ -78,7 +78,7 @@ namespace OpenUGD.UI
             colorKeys = new[] { new GradientColorKey(Color.black, 0.0f), new GradientColorKey(Color.white, 1.0f) }
         };
 
-        // The key times of the gradient they were read from, and a copy of that gradient to detect changes.
+        // The gradient's colour and alpha key times, sorted, and whether they are current.
         // Gradient.colorKeys and alphaKeys allocate arrays, and so does Gradient.Equals in the Unity runtime, so the key
         // times are recomputed only when the gradient is known to have changed: through the GradientColor setter, an
         // inspector edit (OnValidate) or re-enabling. Comparing gradients on every rebuild allocated once per mesh.
@@ -146,7 +146,8 @@ namespace OpenUGD.UI
         }
 
         /// <summary>
-        /// The gradient: black to white by default.
+        /// The gradient: black to white by default. Every assignment rebuilds the graphic's mesh, including an
+        /// assignment of the instance the property already holds.
         /// </summary>
         /// <remarks>
         /// The getter returns the component's own instance. After changing it in place (for example with
