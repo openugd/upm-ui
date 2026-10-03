@@ -150,10 +150,12 @@ namespace OpenUGD.UI
         /// assignment of the instance the property already holds.
         /// </summary>
         /// <remarks>
-        /// The getter returns the component's own instance. After changing it in place (for example with
-        /// <see cref="Gradient.SetKeys"/>), assign it back to this property: the setter is what tells the component the
-        /// keys changed and rebuilds the mesh. Calling <see cref="Graphic.SetVerticesDirty"/> alone rebuilds with the key
-        /// positions cached from the previous assignment.
+        /// The getter returns the instance the component holds, and the setter stores the reference it is given, not
+        /// a copy, so components assigned the same instance share it. After changing it in place (for example with
+        /// <see cref="Gradient.SetKeys"/>), assign it back to this property on every component that holds it: the
+        /// setter is what tells the component the keys changed and rebuilds the mesh. Calling
+        /// <see cref="Graphic.SetVerticesDirty"/> alone rebuilds with the key positions cached from the previous
+        /// assignment.
         /// </remarks>
         /// <exception cref="ArgumentNullException">The value is <c>null</c>.</exception>
         public Gradient GradientColor

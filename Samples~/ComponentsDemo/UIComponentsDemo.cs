@@ -102,6 +102,8 @@ namespace OpenUGD.UI.Samples
                 GradientMeshEffect.Type.Horizontal, GradientMeshEffect.Type.Vertical, GradientMeshEffect.Type.Radial,
                 GradientMeshEffect.Type.Diamond
             };
+            // The setter keeps this instance rather than a copy, so all five effects share it. That is fine here
+            // because none of them changes it in place; one that did would have to assign it back to each effect.
             var gradient = new Gradient();
             gradient.SetKeys(
                 new[]

@@ -1,10 +1,10 @@
 # OpenUGD uGUI Components (com.openugd.ui)
 
-`com.openugd.ui` adds three components to uGUI (Unity UI) that change the mesh a graphic already builds, so they
-need no shader, material or texture of their own: `UIFlippable` mirrors a graphic, `GradientMeshEffect` colours
-it with a gradient, and `EmptyGraphic` is an invisible raycast target. Use it when an `Image`, `Text` or other
-uGUI graphic needs a flip without a negative scale, a gradient without a gradient texture, or a clickable area
-without a transparent `Image`.
+`com.openugd.ui` adds three components to uGUI (Unity UI) that need no shader, material or texture of their own:
+two mesh effects that change the mesh a graphic already builds (`UIFlippable` mirrors it, `GradientMeshEffect`
+colours it with a gradient) and `EmptyGraphic`, an invisible raycast target that builds no mesh. Use it when an
+`Image`, `Text` or other uGUI graphic needs a flip without a negative scale, a gradient without a gradient
+texture, or a clickable area without a transparent `Image`.
 
 All three live in the `OpenUGD.UI` namespace. The package depends only on `com.unity.ugui`; it needs no other
 OpenUGD package, and no OpenUGD package needs it.
@@ -163,11 +163,13 @@ exact; Radial is split into 32 wedges and stays within 0.5% of the true distance
 for meshes that are already dense, such as text. A mesh that would reach uGUI's 65,000-vertex limit is
 coloured without extra vertices instead.
 
-**Changing a gradient in place.** `GradientColor` returns the component's own `Gradient`. After changing its
-keys, assign it back: the setter refreshes the key positions the effect has cached and rebuilds the mesh.
-`SetVerticesDirty()` alone rebuilds with the colours of the new keys but the vertices of the old ones.
-Detecting the change on every rebuild would need `Gradient.Equals`, which allocates in the Unity runtime.
-The cache is also refreshed when the component is enabled and when it is edited in the Inspector.
+**Changing a gradient in place.** `GradientColor` returns the `Gradient` instance the component holds, and the
+setter keeps the instance it is given, not a copy. After changing its keys, assign it back: the setter
+refreshes the key positions the effect has cached and rebuilds the mesh. `SetVerticesDirty()` alone rebuilds
+with the colours of the new keys but the vertices of the old ones. Detecting the change on every rebuild would
+need `Gradient.Equals`, which allocates in the Unity runtime. The cache is also refreshed when the component is
+enabled and when it is edited in the Inspector. Effects given the same instance share it, so an in-place change
+reaches all of them and must be assigned back to each.
 
 ```csharp
 using OpenUGD.UI;
@@ -231,10 +233,10 @@ blocker.transform.SetParent(canvas.transform, false);   // stretch it over what 
 | `UIFlippable.vertical` | `bool` | `false` | Mirror top to bottom. Rebuilds the mesh when the value changes. |
 | `GradientMeshEffect.GradientType` | `Type` | `Horizontal` | The shape. Rebuilds the mesh when the value changes. |
 | `GradientMeshEffect.BlendMode` | `Blend` | `Multiply` | How the colours combine. Rebuilds the mesh when the value changes. |
-| `GradientMeshEffect.GradientColor` | `Gradient` | black to white | Returns the component's own instance; assign it back after changing it in place. Every assignment rebuilds the mesh. `null` throws `ArgumentNullException`. |
-| `GradientMeshEffect.GradientOffset` | `float` | `0` | Slides the gradient; clamped to -1..1. |
-| `GradientMeshEffect.GradientZoom` | `float` | `1` | Magnifies the gradient; clamped to 0.1..10. |
-| `GradientMeshEffect.ModifyVertices` | `bool` | `true` | Adds the vertices the gradient needs. |
+| `GradientMeshEffect.GradientColor` | `Gradient` | black to white | Returns the instance the component holds; the setter stores the reference, not a copy. Assign it back after changing it in place. Every assignment rebuilds the mesh. `null` throws `ArgumentNullException`. |
+| `GradientMeshEffect.GradientOffset` | `float` | `0` | Slides the gradient; clamped to -1..1. Rebuilds the mesh when the value changes. |
+| `GradientMeshEffect.GradientZoom` | `float` | `1` | Magnifies the gradient; clamped to 0.1..10. Rebuilds the mesh when the value changes. |
+| `GradientMeshEffect.ModifyVertices` | `bool` | `true` | Adds the vertices the gradient needs. Rebuilds the mesh when the value changes. |
 | `UIFlippable.ModifyMesh`, `GradientMeshEffect.ModifyMesh` | `void (VertexHelper)` | | Called by the graphic while it rebuilds its mesh; does nothing while the component is disabled or inactive. |
 | `EmptyGraphic.IsRaycastLocationValid` | `bool (Vector2, Camera)` | | Always `true`: the rect test has already passed. |
 
@@ -246,7 +248,7 @@ Import from **Package Manager > OpenUGD uGUI Components > Samples**:
 
 | Sample | What it shows |
 | --- | --- |
-| **Components Demo** | One canvas built in code: text mirrored four ways (one copy flipping every second), the four gradient shapes (one on a graphic with its pivot in the corner, one animating its offset), and an invisible button whose hit area is an `EmptyGraphic`. Put `UIComponentsDemo` on an empty GameObject and enter Play mode; add an Event System to click the button. |
+| **Components Demo** | One canvas built in code: text mirrored four ways plus a copy that flips every second, the four gradient shapes (Horizontal animating its offset) plus Radial again on a graphic with its pivot in the corner, and an invisible button whose hit area is an `EmptyGraphic`. Put `UIComponentsDemo` on an empty GameObject and enter Play mode; add an Event System to click the button. |
 
 ## Running the tests
 
@@ -284,7 +286,7 @@ family. What a 0.1.1 project meets, and what to do:
 | Minimum Unity | 2021.3 | 6000.0 | Stay on 0.1.1 on older editors. |
 | `UIFlippable` order | moved itself above the other mesh effects | stays where you put it | Order the effects in the Inspector. |
 | Radial with `ModifyVertices` | mesh replaced by an ellipse | outline and UVs kept | Use a round sprite or a `Mask` for a round shape. |
-| Diamond | straight-line distance from an off-centre point | Manhattan distance from the centre | Check every Diamond gradient. |
+| Diamond | a circle scaled by the height, centred only for a middle pivot | Manhattan distance from the centre | Check every Diamond gradient. |
 | Gradient changed in place | keys re-read on every rebuild | keys re-read when it is assigned back | Assign it back to `GradientColor`. |
 | `GradientColor = null` | accepted, failed at the next rebuild | `ArgumentNullException` | Assign a `Gradient`. |
 | Menu | *UI > EmptyGraphic* | *UI > Empty Graphic* | Nothing. |
@@ -346,11 +348,13 @@ along a ring at every key, so the graphic keeps its outline and its sprite's UVs
 The colour at a given point is computed as before, so with `ModifyVertices` off a Radial gradient looks as it
 did (unless *Modify Tangents* is on, below). For a round shape, use a round sprite or a `Mask`.
 
-**Diamond.** 0.1.1 measured the straight-line distance from the point `(center.y / 2, center.y / 2)`, scaled by
-the height only, so the shape was neither centred nor a diamond. 2.0 measures the Manhattan distance from the
-centre of the vertex bounds and reaches the gradient's end on the diamond whose corners touch the middle of
-each edge. Every Diamond gradient looks different; recheck its keys and zoom. For a circular falloff use
-Radial.
+**Diamond.** 0.1.1 measured the straight-line distance, a circle rather than a diamond, from the point
+`(c / 2, c / 2)`, where `c` is the y coordinate of the centre of the vertex bounds, and divided it by the height
+of the bounds alone. That point is the centre only when the bounds are centred on the pivot, as they are for an
+`Image` with a middle pivot, and at zoom 1 the gradient's end lay one full height away from it. 2.0 measures
+the Manhattan distance from the centre of the vertex bounds and reaches the gradient's end on the diamond whose
+corners touch the middle of each edge. Every Diamond gradient looks different; recheck its keys and zoom. For
+a circular falloff use Radial.
 
 **Modify Tangents** now applies to Radial and Diamond as well; 0.1.1 ignored it there and wrote the vertex
 colour. If it is on for a Radial or Diamond gradient, turn it off to keep colouring through the vertex colour.

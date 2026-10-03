@@ -15,7 +15,7 @@ code, is in the README section *Upgrading to 2.0*.
 - XML documentation for every public type and member.
 - EditMode tests (`com.openugd.ui.tests`); the ones that need the engine carry `[Category("RequiresUnity")]`.
 - The **Components Demo** sample (`Samples~/ComponentsDemo`): all three components on one canvas, built in code.
-- A README and this changelog.
+- A full README (0.1.1's held only a title) and this changelog.
 
 ### Changed
 
@@ -27,8 +27,9 @@ code, is in the README section *Upgrading to 2.0*.
 - **Breaking:** Radial with `ModifyVertices` cuts the graphic's triangles instead of replacing the mesh with an
   ellipse, so the outline and UVs stay. Affects you if you relied on the round shape: use a round sprite or a
   `Mask`.
-- **Breaking:** Diamond is the Manhattan distance from the centre of the vertex bounds, not the straight-line
-  distance from an off-centre point. Affects every Diamond gradient.
+- **Breaking:** Diamond is the Manhattan distance from the centre of the vertex bounds. It was a straight-line
+  distance scaled by the height, from a point that was the centre only for a middle pivot. Affects every
+  Diamond gradient.
 - **Breaking:** `GradientMeshEffect` caches its key positions. Affects you if you change `GradientColor` in
   place: assign it back.
 - **Breaking:** assigning `null` to `GradientColor` throws `ArgumentNullException` (it failed later, at the next
@@ -57,7 +58,8 @@ code, is in the README section *Upgrading to 2.0*.
 - Setting `UIFlippable.horizontal` or `vertical` did not rebuild the mesh (WG-23).
 - `GradientMeshEffect`'s setters threw when the graphic was missing or destroyed.
 - `UIFlippable`'s serialized field `_veritical` is `_vertical`; `[FormerlySerializedAs]` keeps saved values.
-- Radial was off-centre for any pivot other than the middle (WG-25).
+- With `ModifyVertices`, Radial's mesh was laid out around the pivot, off-centre for any pivot other than the
+  middle (WG-25).
 - Radial and Diamond with `ModifyVertices` never showed a key between the ends.
 - Vertices added by `ModifyVertices` were white, with no tangent and zeroed `uv1`..`uv3`, so `Multiply` and
   `Add` lost the graphic's colour there.

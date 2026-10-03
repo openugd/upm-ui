@@ -10,7 +10,7 @@
     "email": "dorofiy.kolya@gmail.com",
     "url": "https://github.com/openugd"
   },
-  "description": "Three uGUI components that work on the mesh uGUI already builds, so they need no shader, material or texture of their own: UIFlippable mirrors a graphic about its rect centre without a negative scale, GradientMeshEffect writes a horizontal, vertical, radial or diamond gradient into the vertex colours, and EmptyGraphic is an invisible raycast target for hit areas and invisible buttons.",
+  "description": "Three uGUI components that need no shader, material or texture of their own: UIFlippable mirrors a graphic about its rect centre without a negative scale, GradientMeshEffect writes a horizontal, vertical, radial or diamond gradient into the vertex colours, and EmptyGraphic is an invisible raycast target for hit areas and invisible buttons.",
   "keywords": [
     "ui",
     "ugui",
@@ -34,7 +34,7 @@
   "samples": [
     {
       "displayName": "Components Demo",
-      "description": "All three components on one canvas, built in code: text mirrored four ways by UIFlippable (one copy flipping every second), the four GradientMeshEffect shapes (one on a graphic whose pivot is in the corner, one animating its offset), and an invisible Button whose hit area is an EmptyGraphic. Put UIComponentsDemo on an empty GameObject and enter Play mode.",
+      "description": "All three components on one canvas, built in code: text mirrored four ways by UIFlippable plus a copy that flips every second, the four GradientMeshEffect shapes (Horizontal animating its offset) plus Radial again on a graphic whose pivot is in the corner, and an invisible Button whose hit area is an EmptyGraphic. Put UIComponentsDemo on an empty GameObject and enter Play mode.",
       "path": "Samples~/ComponentsDemo"
     }
   ]
