@@ -5,7 +5,7 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-10-03
 
 The package joins the OpenUGD 2.0 family as 2.0.0, straight from 0.1.1. How to upgrade, with before and after
 code, is in the README section *Upgrading to 2.0*.
@@ -77,6 +77,6 @@ code, is in the README section *Upgrading to 2.0*.
 
 - Initial release: `UIFlippable`, `GradientMeshEffect`, and `EmptyGraphic`.
 
-[Unreleased]: https://github.com/openugd/upm-ui/compare/0.1.1...HEAD
+[2.0.0]: https://github.com/openugd/upm-ui/compare/0.1.1...2.0.0
 [0.1.1]: https://github.com/openugd/upm-ui/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/openugd/upm-ui/releases/tag/0.1.0
