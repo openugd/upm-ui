@@ -136,7 +136,9 @@ Every setter rebuilds the graphic's mesh when the value changes, so animating `G
   32 wedges and stays within 0.5% of the true distance. Turn it off for meshes that are already dense, such as
   text. A mesh that would reach uGUI's 65,000-vertex limit is coloured without extra vertices instead.
 - **Changing a gradient in place.** `GradientColor` returns the component's own `Gradient`. After changing its
-  keys in place, assign it back or call `SetVerticesDirty()` on the graphic so the mesh is rebuilt.
+  keys in place, assign it back (`effect.GradientColor = gradient;`): the setter is what refreshes the cached key
+  positions and rebuilds the mesh. Detecting the change on every rebuild would need `Gradient.Equals`, which
+  allocates in the Unity runtime.
 - **Allocation.** Once warm, a rebuild allocates no managed memory: the work lists come from Unity's
   `ListPool`, and the gradient's key times are re-read only when the gradient has changed.
 - **Tangents.** The Inspector-only option *Modify Tangents* writes the blended colour into the vertex tangent

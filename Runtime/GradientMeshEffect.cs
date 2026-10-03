@@ -79,9 +79,11 @@ namespace OpenUGD.UI
         };
 
         // The key times of the gradient they were read from, and a copy of that gradient to detect changes.
-        // Gradient.colorKeys and alphaKeys allocate arrays, so they are read only when the gradient differs.
+        // Gradient.colorKeys and alphaKeys allocate arrays, and so does Gradient.Equals in the Unity runtime, so the key
+        // times are recomputed only when the gradient is known to have changed: through the GradientColor setter, an
+        // inspector edit (OnValidate) or re-enabling. Comparing gradients on every rebuild allocated once per mesh.
         [NonSerialized] private readonly List<float> _keyTimes = new List<float>(16);
-        [NonSerialized] private Gradient _keyTimesSource;
+        [NonSerialized] private bool _keyTimesValid;
 
         /// <summary>
         /// The shape of the gradient.
@@ -148,8 +150,9 @@ namespace OpenUGD.UI
         /// </summary>
         /// <remarks>
         /// The getter returns the component's own instance. After changing it in place (for example with
-        /// <see cref="Gradient.SetKeys"/>), assign it back to this property or call
-        /// <see cref="Graphic.SetVerticesDirty"/> on the graphic so the mesh is rebuilt.
+        /// <see cref="Gradient.SetKeys"/>), assign it back to this property: the setter is what tells the component the
+        /// keys changed and rebuilds the mesh. Calling <see cref="Graphic.SetVerticesDirty"/> alone rebuilds with the key
+        /// positions cached from the previous assignment.
         /// </remarks>
         /// <exception cref="ArgumentNullException">The value is <c>null</c>.</exception>
         public Gradient GradientColor
@@ -158,6 +161,7 @@ namespace OpenUGD.UI
             set
             {
                 gradientColor = value ?? throw new ArgumentNullException(nameof(value));
+                _keyTimesValid = false;
                 SetDirty();
             }
         }
@@ -365,7 +369,7 @@ namespace OpenUGD.UI
 
         private List<float> GetKeyTimes()
         {
-            if (_keyTimesSource != null && _keyTimesSource.Equals(gradientColor))
+            if (_keyTimesValid)
             {
                 return _keyTimes;
             }
@@ -383,14 +387,7 @@ namespace OpenUGD.UI
                 AddKeyTime(alphaKeys[i].time);
             }
 
-            if (_keyTimesSource == null)
-            {
-                _keyTimesSource = new Gradient();
-            }
-
-            _keyTimesSource.SetKeys(colorKeys, alphaKeys);
-            _keyTimesSource.mode = gradientColor.mode;
-            _keyTimesSource.colorSpace = gradientColor.colorSpace;
+            _keyTimesValid = true;
             return _keyTimes;
         }
 
@@ -433,6 +430,22 @@ namespace OpenUGD.UI
 
             return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         }
+
+        /// <inheritdoc/>
+        protected override void OnEnable()
+        {
+            _keyTimesValid = false;
+            base.OnEnable();
+        }
+
+#if UNITY_EDITOR
+        /// <inheritdoc/>
+        protected override void OnValidate()
+        {
+            _keyTimesValid = false;
+            base.OnValidate();
+        }
+#endif
 
         // The setters run outside a rebuild, often from code that has just added the component; Unity's == treats a
         // destroyed or missing Graphic as null.

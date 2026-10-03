@@ -85,7 +85,10 @@ major version. Read *Changed* before upgrading: the namespace moved and three be
   interpolated from the original triangle.
 - `GradientMeshEffect` allocated on every mesh rebuild: a new vertex list, and with `ModifyVertices` a new
   stop list, the gradient's key arrays, and three lists and an array per triangle (WG-26, UH-18). The work lists now come from `ListPool`, and the gradient's key times are
-  cached until the gradient changes, so a warm rebuild allocates nothing.
+  cached until the gradient is assigned again (or the component is re-enabled or edited in the inspector), so
+  a warm rebuild allocates nothing — verified in the Unity 6000.0.41 runtime with the GC.Alloc profiler marker.
+  An earlier revision compared gradients on every rebuild with `Gradient.Equals`, which allocates in the Unity
+  runtime though not on CoreCLR; changing a gradient in place therefore now requires assigning it back.
 
 ### Added
 

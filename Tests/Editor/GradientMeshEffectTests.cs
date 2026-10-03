@@ -245,8 +245,27 @@ namespace OpenUGD.UI.Tests
         }
 
         [Test]
-        public void ChangingTheGradientInPlace_IsPickedUpOnTheNextRebuild()
+        public void ChangingTheGradientInPlace_IsPickedUpOnceAssignedBack()
         {
+            _effect.GradientColor = Keys((0f, Color.black), (0.3f, Color.red), (1f, Color.white));
+            Apply(FullUv);
+
+            var gradient = _effect.GradientColor;
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.black, 0f), new GradientColorKey(Color.green, 0.7f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
+            _effect.GradientColor = gradient;
+            var stream = Apply(FullUv);
+
+            Assert.That(MeshTestUtility.HasVertexAt(stream, new Vector2(70f, 0f)), Is.True, "the new key's row");
+            Assert.That(MeshTestUtility.HasVertexAt(stream, new Vector2(30f, 0f)), Is.False, "the old key's row is gone");
+        }
+
+        [Test]
+        public void ChangingTheGradientInPlace_WithoutAssigningBack_KeepsTheCachedKeyRows()
+        {
+            // The documented contract: the setter is what invalidates the cached key positions. Detecting an
+            // in-place change on every rebuild would need Gradient.Equals, which allocates in the Unity runtime.
             _effect.GradientColor = Keys((0f, Color.black), (0.3f, Color.red), (1f, Color.white));
             Apply(FullUv);
 
@@ -255,8 +274,7 @@ namespace OpenUGD.UI.Tests
                 new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
             var stream = Apply(FullUv);
 
-            Assert.That(MeshTestUtility.HasVertexAt(stream, new Vector2(70f, 0f)), Is.True, "the new key's row");
-            Assert.That(MeshTestUtility.HasVertexAt(stream, new Vector2(30f, 0f)), Is.False, "the old key's row is gone");
+            Assert.That(MeshTestUtility.HasVertexAt(stream, new Vector2(30f, 0f)), Is.True, "the cached row stays until reassigned");
         }
 
         [Test]
