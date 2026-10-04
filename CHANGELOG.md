@@ -22,7 +22,7 @@ code, is in the README section *Upgrading to 2.0*.
 - **Breaking:** `EmptyGraphic`, `GradientMeshEffect` (with `Type` and `Blend`) and `UIFlippable` moved from
   `UnityEngine.UI` to `OpenUGD.UI`, with `[MovedFrom]`; script GUIDs are unchanged, so scenes and prefabs keep
   their components. Affects you if a script names them: add `using OpenUGD.UI;`.
-- **Breaking:** `UIFlippable` no longer moves itself above the other mesh effects in the editor (WG-24).
+- **Breaking:** `UIFlippable` no longer moves itself above the other mesh effects in the editor.
   Affects you if it sat below another effect: drag it above to keep the 0.1.1 result.
 - **Breaking:** Radial with `ModifyVertices` cuts the graphic's triangles instead of replacing the mesh with an
   ellipse, so the outline and UVs stay. Affects you if you relied on the round shape: use a round sprite or a
@@ -42,8 +42,8 @@ code, is in the README section *Upgrading to 2.0*.
 - A mesh that `ModifyVertices` would grow to 65,000 vertices or more is coloured without extra vertices.
 - Display name "OpenUGD uGUI Components" (was "UI Elements"); the package ID is unchanged.
 - Menu: *UI > EmptyGraphic* is *UI > Empty Graphic*; *Flippable* and *Gradient* sort after Unity's effects.
-- `package.json` follows the current manifest schema, with URLs on `main` (PK-14); the asmdef's root namespace
-  is `OpenUGD.UI` and it references `UnityEngine.UI` explicitly.
+- `package.json` follows the current manifest schema, with URLs on `main`; the asmdef's root namespace is
+  `OpenUGD.UI` and it references `UnityEngine.UI` explicitly.
 - Licence: Apache-2.0, in `LICENSE.md`; 0.1.1 shipped the MIT licence in `LICENSE`. Releases before 2.0.0
   keep their original terms.
 
@@ -54,16 +54,16 @@ code, is in the README section *Upgrading to 2.0*.
 
 ### Fixed
 
-- `UIFlippable` mirrored the mesh while disabled or inactive (WG-23, UH-22).
-- Setting `UIFlippable.horizontal` or `vertical` did not rebuild the mesh (WG-23).
+- `UIFlippable` mirrored the mesh while disabled or inactive.
+- Setting `UIFlippable.horizontal` or `vertical` did not rebuild the mesh.
 - `GradientMeshEffect`'s setters threw when the graphic was missing or destroyed.
 - `UIFlippable`'s serialized field `_veritical` is `_vertical`; `[FormerlySerializedAs]` keeps saved values.
 - With `ModifyVertices`, Radial's mesh was laid out around the pivot, off-centre for any pivot other than the
-  middle (WG-25).
+  middle.
 - Radial and Diamond with `ModifyVertices` never showed a key between the ends.
 - Vertices added by `ModifyVertices` were white, with no tangent and zeroed `uv1`..`uv3`, so `Multiply` and
   `Add` lost the graphic's colour there.
-- `GradientMeshEffect` allocated on every rebuild (WG-26, UH-18); a warm rebuild allocates nothing.
+- `GradientMeshEffect` allocated on every rebuild; a warm rebuild allocates nothing.
 
 ## [0.1.1] - 2025-02-10
 

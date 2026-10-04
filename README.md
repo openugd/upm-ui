@@ -1,5 +1,7 @@
 # OpenUGD uGUI Components (com.openugd.ui)
 
+[![OpenUPM](https://img.shields.io/npm/v/com.openugd.ui?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.openugd.ui/) [![Tests](https://github.com/openugd/upm-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/openugd/upm-tools/actions/workflows/ci.yml)
+
 `com.openugd.ui` adds three components to uGUI (Unity UI) that need no shader, material or texture of their own:
 two mesh effects that change the mesh a graphic already builds (`UIFlippable` mirrors it, `GradientMeshEffect`
 colours it with a gradient) and `EmptyGraphic`, an invisible raycast target that builds no mesh. Use it when an
@@ -272,7 +274,13 @@ no PlayMode tests.
 
 The tests of the components themselves carry `[Category("RequiresUnity")]`. The rest cover the mesh
 algorithms behind them (mirroring, triangle cutting, gradient layout and tessellation), which make no engine
-calls and also run on .NET without the editor.
+calls and also run on .NET without the editor: `level1.sh` in
+[openugd/upm-tools](https://github.com/openugd/upm-tools) runs them with `dotnet test`.
+
+The checks also run in public CI: [openugd/upm-tools](https://github.com/openugd/upm-tools/actions/workflows/ci.yml)
+compiles this package, its samples and the complete examples in this README (those that declare a type) against
+Unity 6000.0's assemblies and runs its engine-free tests on every change there and every Monday. The tests that need
+the editor (category `RequiresUnity`) run in a real Unity 6000.0.41f1 editor before each release.
 
 ## Upgrading to 2.0
 
@@ -396,12 +404,42 @@ the next rebuild.
 
 The complete list is in [CHANGELOG.md](CHANGELOG.md).
 
+## The OpenUGD family
+
+Six packages, versioned together as 2.x and published on [OpenUPM](https://openupm.com/packages/?q=com.openugd)
+under the `com.openugd` scope. Installing one brings the ones it depends on.
+
+| Package | What it gives you | Depends on |
+| --- | --- | --- |
+| [Lifetime](https://github.com/openugd/upm-lifetime#readme) — `com.openugd.lifetime` | Scopes with deterministic, reverse-order clean-up | — |
+| [Signal](https://github.com/openugd/upm-signal#readme) — `com.openugd.signal` | Typed events whose subscriptions end with a lifetime | Lifetime |
+| [Context](https://github.com/openugd/upm-context#readme) — `com.openugd.context` | Dependency injection that validates the whole graph before it builds anything | Lifetime |
+| [CoreLib](https://github.com/openugd/upm-corelib#readme) — `com.openugd.corelib` | The Unity boundary: `ContextBehaviour`, presenters, commands, logging | Lifetime, Signal, Context |
+| [CoreLib uGUI Presenters](https://github.com/openugd/upm-corelib-widgets#readme) — `com.openugd.corelib.widgets` | Presenters that bind uGUI and TextMesh Pro controls to a model | CoreLib, Context, Signal, Lifetime, uGUI |
+| [uGUI Components](https://github.com/openugd/upm-ui#readme) — `com.openugd.ui` | Shader-free uGUI components: flip, gradient, invisible hit area | uGUI |
+
+Start with Lifetime and Signal for plain C# scopes and events, add Context for dependency injection, and CoreLib to
+run it inside a Unity scene. [`com.openugd.configuration`](https://github.com/openugd/upm-configuration), a
+string-keyed configuration for Context, is 0.x and not on OpenUPM yet. Other `com.openugd.*` packages on OpenUPM
+predate 2.0 and are not part of this family.
+
 ## Versioning
 
 The OpenUGD packages share their major version; minor and patch versions are independent. Each 2.x package
 works with the 2.x versions of its dependencies at or above the minimums declared in its `package.json`.
 `com.openugd.ui` has no OpenUGD dependency and no OpenUGD package depends on it, so it can be updated on its
 own.
+
+The changes in each version are listed in [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing
+
+Report a bug or an idea at [github.com/openugd/upm-ui/issues](https://github.com/openugd/upm-ui/issues): include the
+Unity version, the package version and, for an exception, the full message. To work on the package, clone it,
+reference the clone from a Unity 6 project (`"com.openugd.ui": "file:../path/to/upm-ui"` in
+`Packages/manifest.json`), add `com.openugd.ui` to `testables`, and run its tests in the Test Runner. The checks
+CI runs are scripts in [openugd/upm-tools](https://github.com/openugd/upm-tools); its README shows how to run them
+locally.
 
 ## Licence
 
